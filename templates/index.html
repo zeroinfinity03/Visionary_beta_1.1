@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blind Assistance App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes pulsate {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+        .mic-button-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+        }
+        .mic-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            background-color: white;
+            border-radius: 50%;
+            padding: 0.5rem;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mic-button-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 50%;
+            background-color: #3B82F6;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .mic-button-wrapper.recording::before {
+            opacity: 1;
+            animation: pulsate 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="p-6 space-y-6">
+            <div id="errorMessage" class="hidden text-red-500 text-center"></div>
+            <div id="startMessage" class="text-green-500 text-center mt-4">App is ready. Tap or shake to start.</div>
+            <div class="text-center">
+                <div id="micBtnWrapper" class="mic-button-wrapper">
+                    <button id="micBtn" class="mic-button text-4xl text-blue-500 hover:text-blue-600 transition-all duration-300 ease-in-out">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="cameraView" class="relative w-full hidden" style="height: 300px;">
+                <video id="video" class="absolute inset-0 w-full h-full object-cover rounded-lg"></video>
+            </div>
+            <div id="fallbackView" class="hidden bg-gray-200 w-full h-64 flex items-center justify-center rounded-lg">
+                <p>Camera view not available</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
