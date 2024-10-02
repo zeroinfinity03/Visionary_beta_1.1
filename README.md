@@ -59,11 +59,15 @@ Ensure you have the following installed to run the project:
 
 Install the necessary Python packages using pip:
 
-```bash
-pip install -r requirements.txt
-requirements.txt includes:
 
-Copy code
+Setup and Installation
+
+Install Dependencies
+
+To install the required dependencies, run the following command:
+Bash
+pip install -r requirements.txt
+The requirements.txt file includes the following dependencies:
 fastapi
 uvicorn
 jinja2
@@ -74,104 +78,106 @@ google-cloud-texttospeech==2.14.1
 pydub
 requests
 Note: If you plan to implement asynchronous HTTP requests in the future, consider adding httpx to your dependencies.
-
 FFmpeg Installation
+
 Pydub relies on FFmpeg for audio processing. Install FFmpeg as follows:
-
-Ubuntu/Debian:
-
-bash
-Copy code
+Ubuntu/Debian
+Bash
 sudo apt update
 sudo apt install ffmpeg
-macOS (using Homebrew):
-
-bash
-Copy code
+macOS (using Homebrew)
+Bash
 brew install ffmpeg
-Windows: Download the FFmpeg binary and add the bin directory to your system's PATH.
-
+Windows
+Download the FFmpeg binary and add the bin directory to your system's PATH.
 Setup Instructions
+
 1. Clone the Repository
-bash
-Copy code
+
+Bash
 git clone <repository-url>
 cd visionary-assistive-app
 2. Set Up Environment Variables
-Create a .env file in the root directory and add your API keys and credentials:
 
-makefile
-Copy code
+Create a .env file in the root directory and add your API keys and credentials:
+Makefile
 GOOGLE_APPLICATION_CREDENTIALS=./credentials/google-cloud-credentials.json
 PERPLEXITY_API_KEY=<your_perplexity_api_key>
 GEMINI_API_KEY=<your_gemini_api_key>
 Environment Variables Explained:
-
 GOOGLE_APPLICATION_CREDENTIALS: Path to your Google Cloud service account JSON file for Text-to-Speech.
 PERPLEXITY_API_KEY: Your Perplexity API key for accessing real-time information.
 GEMINI_API_KEY: Your Gemini 1.5 Flash model API key for processing voice and image data.
 Ensure that the Google Cloud credentials file is located at the specified path.
-
 3. Install Dependencies
-Install the required Python packages:
 
-bash
-Copy code
+Bash
 pip install -r requirements.txt
 4. Run the Backend Server
-Start the FastAPI backend server using Uvicorn:
 
-bash
-Copy code
+Bash
 uvicorn main:app --reload
 5. Access the Frontend
+
 Open the index.html file located in the templates directory in your preferred web browser to launch the application. Ensure that your browser has granted permissions for camera, microphone, and location services.
-
 Note: For seamless audio playback, ensure that your browser allows autoplay of audio without user interaction.
-
 Usage
+
 Voice Interaction
+
 Start Recording: Tap the microphone button or shake your device to begin voice recording.
 Stop Recording: Tap the microphone button again or shake the device to stop recording.
 Image Analysis
+
 Query Example: Ask a question like "What is in front of me?"
 Process: The app captures an image using the device's rear camera and sends it to the Gemini 1.5 Flash model for analysis.
 Response: Provides a concise, language-specific description of the image, including any relevant safety concerns.
 Navigation Assistance
+
 Query Example: Ask "How do I get to the nearest Walmart?"
 Process: Responds with "Opening Google Maps for Walmart" and opens Google Maps with walking directions based on your current location.
 Real-Time Information Retrieval
+
 Query Example: Ask "What's the current stock price of Tesla?"
 Process: The app responds with "Searching What's the current stock price of Tesla?" and retrieves real-time information using the Perplexity API.
 Response: Converts the retrieved information into speech in the same language as the user's query.
 Troubleshooting
+
 Image Capture Issues
+
 Ensure that camera permissions are enabled in your browser settings.
 Verify that your device has a functioning rear camera.
 Voice Response Issues
+
 Check if the PERPLEXITY_API_KEY and GEMINI_API_KEY in your .env file are correct and active.
 Ensure that the Google Cloud Text-to-Speech service is properly configured and that your credentials are valid.
 Network Errors
+
 Confirm that your internet connection is stable.
 Verify that your API keys are correctly set up and have not exceeded their usage limits.
 Check the Perplexity API Status for any ongoing service issues.
 Permission Denied
+
 If the app is not capturing images or audio, ensure that permissions for camera, microphone, and location services are granted in your browser.
 Reload the page after granting permissions.
 Audio Processing Issues
+
 Ensure that FFmpeg is installed and correctly set up on your system.
 Verify that the Google Cloud Text-to-Speech API is functioning as expected.
 Rate Limiting
+
 If you encounter rate limit errors, ensure that your app is not exceeding 20 requests per minute to the Perplexity API.
 Monitor request counts and implement backoff strategies if necessary.
 Contributing
+
 Contributions are welcome! Please fork the repository and create a pull request with your changes.
-
 License
-This project is licensed under the MIT License. See the LICENSE file for details.
 
+This project is licensed under the MIT License. See the LICENSE file for details.
 Additional Notes
+
 Technical Implementation Details
+
 Backend (main.py)
 FastAPI: Serves as the backend framework for handling API requests.
 Gemini 1.5 Flash Model: Processes voice and image data to understand user queries.
@@ -184,17 +190,14 @@ Event Handling: Listens for touch and motion events to manage recording states.
 Audio Processing: Captures audio, processes it, and plays synthesized responses.
 Navigation Handling: Integrates with Google Maps to provide location-based directions.
 Testing Multilingual Support
+
 To ensure that Visionary handles multilingual queries effectively:
-
-English Query:
-
+English Query
 User Question: "What's the capital of France?"
 Expected Response: Brief answer in English.
-Spanish Query:
-
+Spanish Query
 User Question: "¿Cuál es la capital de Francia?"
 Expected Response: Breve respuesta en español.
-Hindi Query:
-
+Hindi Query
 User Question: "फ्रांस की राजधानी क्या है?"
 Expected Response: संक्षिप्त उत्तर हिंदी में।
