@@ -1,6 +1,6 @@
 const micBtn = document.getElementById('micBtn');
 const micBtnWrapper = document.getElementById('micBtnWrapper');
-const video = document.getElementById('video');
+const video = document.createElement('video'); // Create a video element programmatically
 let audioStream = null;
 let mediaRecorder = null;
 let audioChunks = [];
@@ -10,6 +10,7 @@ let lastX = 0, lastY = 0, lastZ = 0;
 let lastTapTime = 0;
 let tapCount = 0;
 let audioPlayer = null;
+let videoStream = null; // Add this line at the top of the file with other global variables
 
 async function startApp() {
     try {
@@ -60,17 +61,15 @@ async function requestPermissions() {
 
 async function setupVideoStream() {
     try {
-        const videoStream = await navigator.mediaDevices.getUserMedia({ 
+        videoStream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment' },
             audio: false
         });
         video.srcObject = videoStream;
         await video.play();
-        document.getElementById('cameraView').classList.remove('hidden');
+        console.log('Video stream set up successfully');
     } catch (error) {
         console.error('Error setting up video stream:', error);
-        document.getElementById('cameraView').classList.add('hidden');
-        document.getElementById('fallbackView').classList.remove('hidden');
     }
 }
 
@@ -165,6 +164,14 @@ function handleInteraction() {
     if (navigator.vibrate) {
         navigator.vibrate(50);
     }
+
+    // Add auditory feedback
+    playAuditoryFeedback();
+}
+
+function playAuditoryFeedback() {
+    // Implement a short audio cue to confirm user actions
+    // This is a placeholder and needs to be implemented
 }
 
 function stopAudioAndResetApp() {
@@ -214,6 +221,12 @@ async function sendAudioAndImageToBackend() {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
     const imageBlob = await captureImage();
 
+    if (!imageBlob) {
+        console.error('Failed to capture image');
+        playAudioResponse(synthesize_speech("I'm sorry, but I couldn't capture an image. Please try again."));
+        return;
+    }
+
     const formData = new FormData();
     formData.append('audio', audioBlob, 'recording.webm');
     formData.append('image', imageBlob, 'capture.jpg');
@@ -230,20 +243,30 @@ async function sendAudioAndImageToBackend() {
 
         const result = await response.json();
 
+        if (!result.audio) {
+            throw new Error("Response does not contain audio data");
+        }
+
         if (result.is_navigation) {
             playAudioResponse(result.audio);
             handleNavigation(result.location);
-        } else if (result.audio) {
+        } else if (result.is_searching) {
             playAudioResponse(result.audio);
         } else {
-            throw new Error("Unexpected response format from server");
+            playAudioResponse(result.audio);
         }
     } catch (error) {
         console.error('Error processing request:', error);
+        playAudioResponse(synthesize_speech("I'm sorry, but there was an error processing your request. Please try again."));
     }
 }
 
 async function captureImage() {
+    if (!video.srcObject) {
+        console.error('Video stream is not available');
+        return null;
+    }
+
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -320,6 +343,13 @@ function base64ToBlob(base64, mimeType) {
     }
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], {type: mimeType});
+}
+
+// Add this function to synthesize speech for error messages
+function synthesize_speech(text) {
+    // This is a placeholder function. In a real implementation, you would call your text-to-speech service here.
+    // For now, we'll return a base64 encoded audio file (you should replace this with actual audio data)
+    return "data:audio/mp3;base64,SGVsbG8sIFdvcmxkIQ==";
 }
 
 // Start the app when the page loads
