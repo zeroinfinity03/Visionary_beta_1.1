@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, File, UploadFile
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -10,6 +10,14 @@ from dotenv import load_dotenv
 import os
 import base64
 from pathlib import Path
+import io
+from pydub import AudioSegment
+import requests
+import json
+import asyncio
+import time
+from requests.exceptions import RequestException
+from collections import deque
 
 load_dotenv()
 
@@ -33,17 +41,39 @@ if not credentials_path.exists():
 credentials = service_account.Credentials.from_service_account_file(str(credentials_path))
 tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
 
+# Configure Perplexity API
+PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
+if not PERPLEXITY_API_KEY:
+    raise ValueError("PERPLEXITY_API_KEY is not set in the environment variables")
+
+# Rate limiting
+MAX_REQUESTS_PER_MINUTE = 20
+request_timestamps = deque(maxlen=MAX_REQUESTS_PER_MINUTE)
+
+
 DEFAULT_PROMPT = """
-"I will ask questions in audio format. Please respond to my questions by following these rules:
 
-1. Only when I explicitly ask, in any language, that is similar to : (what is in front of me, whether I can cross the road, or what an object is), should you analyze the provided image and give a concise description in the same language I used. Since I am blind, include any safety concerns where applicable. Do not provide any descriptions unless I ask for them explicitly. If I remain silent, do not initiate or describe anything unprompted.
+I will ask questions in audio format. Please respond following these specific rules:
 
-2. For navigation-related queries in any language (e.g., 'How do I get to the nearest place like Walmart?' or 'Take me to...'), always respond with 'Opening Google Maps for {location}' in English, regardless of the language I am using.
+1. If I ask in any language a question like "What is in front of me?", "Can I cross the road?", or "What is this object?", analyze the provided image and give a concise description in the same language as the question (e.g., Hindi, Spanish, etc.). Since I am blind, include any relevant safety concerns.
+Restrictions: Do not describe anything unless explicitly requested. Remain silent if I do not ask for a description.
 
-3. For any other queries apart from these two cases (e.g., recipes, any particular guides, random questions), just reply in the same language i used  but don't use any special symbols or emojis.
+2. For questions such as "How do I get to the nearest Walmart?" or commands like "Take me to...", respond with: "Opening Google Maps for {location}" in English, regardless of the user's language.
 
-4. At the end of each response, state the name of the language I used as a single word (e.g., 'English', 'Hindi', 'Spanish', 'Telugu', etc.)."
+3. Recent Information Queries like whats happening in the world, or something like that in any language just say searching and repeat the question in the same language.
+Example:
+User Question: "¿Cuál es el precio actual de las acciones de Tesla?"
+Response: "searching ¿Cuál es el precio actual de las acciones de Tesla?"
+
+4. For questions other than these 3 like recipes, guides, how are u? , wts up, etc reply in the same language as the question, avoiding any special symbols or emojis.
+
+5. At the end of each response, mention the language used by the user as a single word.
+Example: "English", "Hindi", "Spanish", etc.
+
 """
+
+
+
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -71,24 +101,119 @@ async def process_audio_and_image(audio: UploadFile = File(...), image: UploadFi
         print(f"Gemini response: {text_response}")
         
         # Extract language from the response
-        language = text_response.split()[-1].lower()
-        # Remove the language name from the text response
-        text_response = ' '.join(text_response.split()[:-1])
+        parts = text_response.rsplit(None, 1)
+        language = parts[-1].lower() if len(parts) > 1 else "english"
+        text_response = parts[0] if len(parts) > 1 else text_response
         
         if text_response.lower().startswith("opening google maps for"):
             print("Triggering navigation")
             location = text_response.replace("Opening Google Maps for", "").strip()
             audio_content = synthesize_speech(text_response, language)
-            return JSONResponse(content={"response": text_response, "audio": audio_content, "is_navigation": True, "location": location})
+            return JSONResponse(content={
+                "response": text_response, 
+                "audio": audio_content, 
+                "is_navigation": True, 
+                "location": location
+            })
+        elif text_response.lower().startswith("searching"):
+            print("Handling recent information query")
+            search_query = text_response[len("searching"):].strip()
+            
+            searching_audio = synthesize_speech("searching", language)
+            print(f"Sending query to Perplexity API: {search_query}")
+            search_result = await search_perplexity(search_query)
+            print(f"Received result from Perplexity API: {search_result}")
+            result_audio = synthesize_speech(search_result, language)
+            combined_audio = combine_audio(searching_audio, result_audio)
+            
+            return JSONResponse(content={
+                "response": f"searching. {search_result}",
+                "audio": combined_audio,
+                "is_searching": True
+            })
         else:
             print("Regular response")
             audio_content = synthesize_speech(text_response, language)
-            return JSONResponse(content={"response": text_response, "audio": audio_content})
+            return JSONResponse(content={
+                "response": text_response, 
+                "audio": audio_content
+            })
     except Exception as e:
         print(f"Error processing input: {str(e)}")
         error_message = "Sorry, there was an error processing your request. Please try again."
         error_audio = synthesize_speech(error_message, "english")
-        return JSONResponse(content={"error": str(e), "response": error_message, "audio": error_audio}, status_code=500)
+        return JSONResponse(content={
+            "error": str(e), 
+            "response": error_message, 
+            "audio": error_audio
+        }, status_code=500)
+
+async def search_perplexity(query: str):
+    global request_timestamps
+    current_time = time.time()
+    
+    # Remove timestamps older than 1 minute
+    while request_timestamps and current_time - request_timestamps[0] > 60:
+        request_timestamps.popleft()
+    
+    # If we've made 20 requests in the last minute, wait
+    if len(request_timestamps) >= MAX_REQUESTS_PER_MINUTE:
+        wait_time = 60 - (current_time - request_timestamps[0])
+        if wait_time > 0:
+            await asyncio.sleep(wait_time)
+    
+    # Add current timestamp to the queue
+    request_timestamps.append(time.time())
+
+    url = "https://api.perplexity.ai/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "llama-3.1-sonar-small-128k-online",  # Corrected model name
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant that provides brief, concise answers."},
+            {"role": "user", "content": f"Provide a brief answer to: {query}"}
+        ],
+        "max_tokens": 100
+    }
+    
+    try:
+        response = requests.post(url, json=data, headers=headers, timeout=10)
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'choices' in result and len(result['choices']) > 0:
+            answer = result['choices'][0]['message']['content']
+            return answer.strip()
+        else:
+            return "I'm sorry, I couldn't find that information."
+    except Exception as e:
+        print(f"Error querying Perplexity API: {str(e)}")
+        return "I'm sorry, but there was a problem connecting to my knowledge source. Please try again later."
+
+def combine_audio(audio1, audio2):
+    # Decode base64 strings to bytes
+    audio1_bytes = base64.b64decode(audio1)
+    audio2_bytes = base64.b64decode(audio2)
+
+    # Create AudioSegment objects from the bytes
+    sound1 = AudioSegment.from_mp3(io.BytesIO(audio1_bytes))
+    sound2 = AudioSegment.from_mp3(io.BytesIO(audio2_bytes))
+
+    # Concatenate the two audio segments
+    combined = sound1 + sound2
+
+    # Export the combined audio to a bytes buffer
+    buffer = io.BytesIO()
+    combined.export(buffer, format="mp3")
+    buffer.seek(0)
+
+    # Encode the combined audio back to base64
+    combined_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    return combined_base64
 
 def synthesize_speech(text, language):
     input_text = texttospeech.SynthesisInput(text=text)
