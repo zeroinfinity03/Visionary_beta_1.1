@@ -5,18 +5,5 @@ google-generativeai
 python-multipart
 python-dotenv
 google-cloud-texttospeech==2.14.1
-<<<<<<< HEAD
-=======
-
-
-
-
-
-
-
-
-
-
->>>>>>> b5c71d6 (update files)
-
-
+pydub
+requests
