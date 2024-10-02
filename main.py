@@ -51,26 +51,10 @@ MAX_REQUESTS_PER_MINUTE = 20
 request_timestamps = deque(maxlen=MAX_REQUESTS_PER_MINUTE)
 
 
-DEFAULT_PROMPT = """
+# DEFAULT_PROMPT = """
 
-I will ask questions in audio format. Please respond following these specific rules:
+# """
 
-1. If I ask in any language a question like "What is in front of me?", "Can I cross the road?", or "What is this object?", analyze the provided image and give a concise description in the same language as the question (e.g., Hindi, Spanish, etc.). Since I am blind, include any relevant safety concerns.
-Restrictions: Do not describe anything unless explicitly requested. Remain silent if I do not ask for a description.
-
-2. For questions such as "How do I get to the nearest Walmart?" or commands like "Take me to...", respond with: "Opening Google Maps for {location}" in English, regardless of the user's language.
-
-3. Recent Information Queries like whats happening in the world, or something like that in any language just say searching and repeat the question in the same language.
-Example:
-User Question: "¿Cuál es el precio actual de las acciones de Tesla?"
-Response: "searching ¿Cuál es el precio actual de las acciones de Tesla?"
-
-4. For questions other than these 3 like recipes, guides, how are u? , wts up, etc reply in the same language as the question, avoiding any special symbols or emojis.
-
-5. At the end of each response, mention the language used by the user as a single word.
-Example: "English", "Hindi", "Spanish", etc.
-
-"""
 
 
 
