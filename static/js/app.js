@@ -294,27 +294,45 @@ function handleNavigation(location) {
     navigator.geolocation.getCurrentPosition((position) => {
         const { latitude, longitude } = position.coords;
 
-        const googleMapsAppUrl = `comgooglemaps://?saddr=${latitude},${longitude}&daddr=${encodeURIComponent(location)}&directionsmode=walking&nav=1`;
-        const appleMapsUrl = `maps://maps.apple.com/?saddr=${latitude},${longitude}&daddr=${encodeURIComponent(location)}&dirflg=w`;
+        // iOS URL Schemes
+        const googleMapsAppUrl_iOS = `comgooglemaps://?saddr=${latitude},${longitude}&daddr=${encodeURIComponent(location)}&directionsmode=walking&nav=1`;
+        const appleMapsUrl = `maps://maps.apple.com/?saddr=${latitude},${longitude}&daddr=${encodeURIComponent(location)}&travelmode=walking`;
+
+        // Android URL Schemes
+        const googleMapsAppUrl_Android = `google.navigation:q=${encodeURIComponent(location)}&mode=w`;
+        const geoUri = `geo:0,0?q=${encodeURIComponent(location)}`;
+
+        // Google Maps Web URL
         const googleMapsWebUrl = `https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${encodeURIComponent(location)}&travelmode=walking`;
 
         if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            window.location.href = googleMapsAppUrl;
+            // Attempt to open Google Maps App on iOS
+            window.location.href = googleMapsAppUrl_iOS;
 
+            // Fallback to Apple Maps after 1 second if Google Maps App fails
             setTimeout(() => {
                 window.location.href = appleMapsUrl;
             }, 1000);
 
+            // Fallback to Google Maps Web after 2 seconds if both apps fail
             setTimeout(() => {
                 window.open(googleMapsWebUrl, '_blank');
             }, 2000);
         } else if (/Android/i.test(navigator.userAgent)) {
-            window.location.href = googleMapsAppUrl;
+            // Attempt to open Google Maps App on Android
+            window.location.href = googleMapsAppUrl_Android;
 
+            // Fallback to Geo URI after 1 second if Google Maps App fails
+            setTimeout(() => {
+                window.location.href = geoUri;
+            }, 1000);
+
+            // Fallback to Google Maps Web after 2 seconds if Geo URI fails
             setTimeout(() => {
                 window.open(googleMapsWebUrl, '_blank');
-            }, 1000);
+            }, 2000);
         } else {
+            // For non-mobile or unsupported devices, open Google Maps Web
             window.open(googleMapsWebUrl, '_blank');
         }
     }, (error) => {
