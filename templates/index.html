@@ -1,73 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blind Assistance App</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        @keyframes pulsate {
-            0% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 0.3; }
-            100% { transform: scale(1); opacity: 0.7; }
-        }
-        .mic-button-wrapper {
-            position: relative;
-            display: inline-block;
-            width: 100px;
-            height: 100px;
-        }
-        .mic-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-            background-color: white;
-            border-radius: 50%;
-            padding: 0.5rem;
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .mic-button-wrapper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 50%;
-            background-color: #3B82F6;
-            z-index: 1;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .mic-button-wrapper.recording::before {
-            opacity: 1;
-            animation: pulsate 1.5s ease-in-out infinite;
-        }
-    </style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visionary</title>
+  <!-- Import Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+        background: url(https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGF2bjZ2MWFhajF3cXNxM205azByMzExZTQ5NTQ1NDMwNDlvd2RsOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/7VzgMsB6FLCilwS30v/giphy.webp);
+        background-size: cover; 
+        background-position: center; 
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div id="app" class="w-full max-w-md bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="p-6 space-y-6">
-            <div id="errorMessage" class="hidden text-red-500 text-center"></div>
-            <div id="startMessage" class="text-green-500 text-center mt-4">App is ready. Tap or shake to start.</div>
-            <div class="text-center">
-                <div id="micBtnWrapper" class="mic-button-wrapper">
-                    <button id="micBtn" class="mic-button text-4xl text-blue-500 hover:text-blue-600 transition-all duration-300 ease-in-out">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
+<body>
+
+  <nav class="bg-white p-4 flex justify-between items-center">
+    <!-- Logo Section -->
+    <div class="text-black text-xl font-bold">
+      <h1>Visionary</h1> <!-- You can replace this with an <img> tag for an actual logo -->
     </div>
 
-    <script src="/static/js/app.js"></script>
+  </nav>
+
+  <div class="flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
+        <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+    
+        <form action="#" method="POST">
+          
+          <div class="mb-4">
+            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+    
+    
+          <div class="mb-6">
+            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+    
+          <!-- Login Button -->
+          <div>
+            <button
+              type="submit"
+              class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            >
+              Login
+            </button>
+          </div>
+        </form>
+    
+        
+        <p class="mt-6 text-center text-gray-600">
+          Don't have an account? 
+          <a href="#" class="text-blue-600 hover:underline">Register</a>
+        </p>
+      </div>
+  </div>
+
 </body>
 </html>
-
